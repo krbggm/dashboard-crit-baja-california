@@ -66,11 +66,12 @@ with st.sidebar:
     st.markdown("<div style='text-align:center;padding:8px 4px 16px 4px'><div style='font-size:2rem'>✿</div><div style='font-size:1.2rem;font-weight:850;letter-spacing:.05em'>CRIT</div><div style='font-size:.72rem;color:#DDE5FF'>BAJA CALIFORNIA</div></div>", unsafe_allow_html=True)
     st.markdown("---")
     st.markdown("### ▦  Navegación")
-    st.markdown("**▣  Resumen**")
-    st.markdown("▤  Indicadores")
-    st.markdown("◷  Tendencias")
-    st.markdown("▥  Distribuciones")
-    st.markdown("♡  Metodología")
+    page = st.radio(
+        "Ir a sección",
+        ["Resumen", "Indicadores", "Tendencias", "Distribuciones", "Metodología"],
+        key="navigation_page",
+        label_visibility="collapsed",
+    )
     st.markdown("---")
     st.caption("Prototipo académico · Datos agregados")
 
@@ -118,113 +119,117 @@ def status_patients(label):
     d = status_y[status_y["estatus_servicio"].astype(str).str.upper() == label]
     return int(d["pacientes_unicos"].sum()) if not d.empty else 0
 
-st.info(
-    "Los indicadores de pacientes por mes cuentan pacientes únicos dentro de cada mes. "
-    "Los conteos por servicio, municipio, clínica y estado son distribuciones independientes; "
-    "no deben sumarse entre categorías para obtener el total general."
-)
-
-st.subheader("Indicadores de seguimiento")
-row1 = st.columns(6)
-row1[0].metric("Pacientes con baja administrativa", f"{total_patients:,}")
-row1[1].metric("Servicios analizados", f"{services_count:,}")
-row1[2].metric("Meses con datos", f"{months_count:,}")
-row1[3].metric("Registros con inasistencia", f"{status_patients('INASISTENCIA'):,}")
-row1[4].metric("Municipios representados", f"{municipalities_count:,}")
-row1[5].metric("Clínicas representadas", f"{clinics_count:,}")
-with st.expander("Otros estados de cita registrados"):
-    row2 = st.columns(3)
-    row2[0].metric("Registro TOMADA", f"{status_patients('TOMADA'):,}")
-    row2[1].metric("Registro CANCELADA", f"{status_patients('CANCELADA'):,}")
-    row2[2].metric("Registro POSPUESTA", f"{status_patients('POSPUESTA'):,}")
-
-st.subheader("1. Evolución de bajas por mes")
-if monthly.empty:
-    st.info("No hay grupos que mostrar para la selección actual.")
-else:
-    monthly["periodo"] = pd.to_datetime(
-        monthly["anio"].astype(int).astype(str) + "-" + monthly["mes"].astype(int).astype(str).str.zfill(2) + "-01"
+if page in ["Resumen", "Indicadores"]:
+    st.info(
+        "Los indicadores de pacientes por mes cuentan pacientes únicos dentro de cada mes. "
+        "Los conteos por servicio, municipio, clínica y estado son distribuciones independientes; "
+        "no deben sumarse entre categorías para obtener el total general."
     )
-    fig = px.line(monthly.sort_values("periodo"), x="periodo", y="pacientes_unicos", markers=True,
-                  labels={"periodo":"Mes de baja", "pacientes_unicos":"Pacientes únicos"}, color_discrete_sequence=PURPLE_SEQUENCE)
-    fig.update_layout(template="plotly_white", colorway=PURPLE_SEQUENCE, paper_bgcolor="rgba(0,0,0,0)", plot_bgcolor="rgba(0,0,0,0)", font=dict(color="#443650", family="Arial"), margin=dict(l=10,r=10,t=20,b=10), hoverlabel=dict(bgcolor="#512879", font_color="white"))
-    st.plotly_chart(fig, use_container_width=True)
 
-c1, c2 = st.columns(2)
-with c1:
-    st.subheader("2. Distribución por servicio")
-    if selected_municipality != "Todos":
-        d = sm[sm["municipio"].astype(str) == selected_municipality]
-        if selected_service != "Todos":
-            d = d[d["servicio"].astype(str) == selected_service]
-        d = d.groupby("servicio", as_index=False)["pacientes_unicos"].sum()
+    st.subheader("Indicadores de seguimiento")
+    row1 = st.columns(6)
+    row1[0].metric("Pacientes con baja administrativa", f"{total_patients:,}")
+    row1[1].metric("Servicios analizados", f"{services_count:,}")
+    row1[2].metric("Meses con datos", f"{months_count:,}")
+    row1[3].metric("Registros con inasistencia", f"{status_patients('INASISTENCIA'):,}")
+    row1[4].metric("Municipios representados", f"{municipalities_count:,}")
+    row1[5].metric("Clínicas representadas", f"{clinics_count:,}")
+    with st.expander("Otros estados de cita registrados"):
+        row2 = st.columns(3)
+        row2[0].metric("Registro TOMADA", f"{status_patients('TOMADA'):,}")
+        row2[1].metric("Registro CANCELADA", f"{status_patients('CANCELADA'):,}")
+        row2[2].metric("Registro POSPUESTA", f"{status_patients('POSPUESTA'):,}")
+
+if page in ["Resumen", "Tendencias"]:
+    st.subheader("1. Evolución de bajas por mes")
+    if monthly.empty:
+        st.info("No hay grupos que mostrar para la selección actual.")
     else:
-        d = service.groupby("servicio", as_index=False)["pacientes_unicos"].sum()
-        if selected_service != "Todos":
-            d = d[d["servicio"].astype(str) == selected_service]
-    d = d.sort_values("pacientes_unicos", ascending=False).head(15)
-    if d.empty:
-        st.info("No hay grupos visibles con la combinación seleccionada.")
-    else:
-        fig = px.bar(d.sort_values("pacientes_unicos"), x="pacientes_unicos", y="servicio", orientation="h",
-                     labels={"pacientes_unicos":"Pacientes únicos en el grupo", "servicio":"Servicio"}, color_discrete_sequence=["#7851A9"])
+        monthly["periodo"] = pd.to_datetime(
+            monthly["anio"].astype(int).astype(str) + "-" + monthly["mes"].astype(int).astype(str).str.zfill(2) + "-01"
+        )
+        fig = px.line(monthly.sort_values("periodo"), x="periodo", y="pacientes_unicos", markers=True,
+                      labels={"periodo":"Mes de baja", "pacientes_unicos":"Pacientes únicos"}, color_discrete_sequence=PURPLE_SEQUENCE)
         fig.update_layout(template="plotly_white", colorway=PURPLE_SEQUENCE, paper_bgcolor="rgba(0,0,0,0)", plot_bgcolor="rgba(0,0,0,0)", font=dict(color="#443650", family="Arial"), margin=dict(l=10,r=10,t=20,b=10), hoverlabel=dict(bgcolor="#512879", font_color="white"))
         st.plotly_chart(fig, use_container_width=True)
 
-with c2:
-    st.subheader("3. Bajas por municipio")
-    if selected_service != "Todos":
-        d = sm[sm["servicio"].astype(str) == selected_service]
+if page == "Distribuciones":
+    c1, c2 = st.columns(2)
+    with c1:
+        st.subheader("2. Distribución por servicio")
         if selected_municipality != "Todos":
-            d = d[d["municipio"].astype(str) == selected_municipality]
-        d = d.groupby("municipio", as_index=False)["pacientes_unicos"].sum()
-    else:
-        d = municipality.groupby("municipio", as_index=False)["pacientes_unicos"].sum()
-        if selected_municipality != "Todos":
-            d = d[d["municipio"].astype(str) == selected_municipality]
-    d = d.sort_values("pacientes_unicos", ascending=False)
-    if d.empty:
-        st.info("No hay grupos visibles con la combinación seleccionada.")
-    else:
-        fig = px.bar(d, x="municipio", y="pacientes_unicos",
-                     labels={"pacientes_unicos":"Pacientes únicos en el grupo", "municipio":"Municipio"}, color_discrete_sequence=["#7851A9"])
-        fig.update_layout(template="plotly_white", colorway=PURPLE_SEQUENCE, paper_bgcolor="rgba(0,0,0,0)", plot_bgcolor="rgba(0,0,0,0)", font=dict(color="#443650", family="Arial"), margin=dict(l=10,r=10,t=20,b=10), xaxis_tickangle=-30, hoverlabel=dict(bgcolor="#512879", font_color="white"))
-        st.plotly_chart(fig, use_container_width=True)
+            d = sm[sm["municipio"].astype(str) == selected_municipality]
+            if selected_service != "Todos":
+                d = d[d["servicio"].astype(str) == selected_service]
+            d = d.groupby("servicio", as_index=False)["pacientes_unicos"].sum()
+        else:
+            d = service.groupby("servicio", as_index=False)["pacientes_unicos"].sum()
+            if selected_service != "Todos":
+                d = d[d["servicio"].astype(str) == selected_service]
+        d = d.sort_values("pacientes_unicos", ascending=False).head(15)
+        if d.empty:
+            st.info("No hay grupos visibles con la combinación seleccionada.")
+        else:
+            fig = px.bar(d.sort_values("pacientes_unicos"), x="pacientes_unicos", y="servicio", orientation="h",
+                         labels={"pacientes_unicos":"Pacientes únicos en el grupo", "servicio":"Servicio"}, color_discrete_sequence=["#7851A9"])
+            fig.update_layout(template="plotly_white", colorway=PURPLE_SEQUENCE, paper_bgcolor="rgba(0,0,0,0)", plot_bgcolor="rgba(0,0,0,0)", font=dict(color="#443650", family="Arial"), margin=dict(l=10,r=10,t=20,b=10), hoverlabel=dict(bgcolor="#512879", font_color="white"))
+            st.plotly_chart(fig, use_container_width=True)
 
-c3, c4 = st.columns(2)
-with c3:
-    st.subheader("4. Estados de servicio")
-    d = status.groupby("estatus_servicio", as_index=False)["pacientes_unicos"].sum()
-    if selected_service != "Todos":
-        d2 = ss[ss["servicio"].astype(str) == selected_service]
-        d = d2.groupby("estatus_servicio", as_index=False)["pacientes_unicos"].sum()
-    if d.empty:
-        st.info("No hay grupos visibles para esta selección.")
-    else:
-        fig = px.bar(d.sort_values("pacientes_unicos", ascending=False), x="estatus_servicio", y="pacientes_unicos",
-                     labels={"pacientes_unicos":"Pacientes con al menos un registro", "estatus_servicio":"Estado"}, color_discrete_sequence=["#7851A9"])
-        fig.update_layout(template="plotly_white", colorway=PURPLE_SEQUENCE, paper_bgcolor="rgba(0,0,0,0)", plot_bgcolor="rgba(0,0,0,0)", font=dict(color="#443650", family="Arial"), margin=dict(l=10,r=10,t=20,b=10), hoverlabel=dict(bgcolor="#512879", font_color="white"))
-        st.plotly_chart(fig, use_container_width=True)
+    with c2:
+        st.subheader("3. Bajas por municipio")
+        if selected_service != "Todos":
+            d = sm[sm["servicio"].astype(str) == selected_service]
+            if selected_municipality != "Todos":
+                d = d[d["municipio"].astype(str) == selected_municipality]
+            d = d.groupby("municipio", as_index=False)["pacientes_unicos"].sum()
+        else:
+            d = municipality.groupby("municipio", as_index=False)["pacientes_unicos"].sum()
+            if selected_municipality != "Todos":
+                d = d[d["municipio"].astype(str) == selected_municipality]
+        d = d.sort_values("pacientes_unicos", ascending=False)
+        if d.empty:
+            st.info("No hay grupos visibles con la combinación seleccionada.")
+        else:
+            fig = px.bar(d, x="municipio", y="pacientes_unicos",
+                         labels={"pacientes_unicos":"Pacientes únicos en el grupo", "municipio":"Municipio"}, color_discrete_sequence=["#7851A9"])
+            fig.update_layout(template="plotly_white", colorway=PURPLE_SEQUENCE, paper_bgcolor="rgba(0,0,0,0)", plot_bgcolor="rgba(0,0,0,0)", font=dict(color="#443650", family="Arial"), margin=dict(l=10,r=10,t=20,b=10), xaxis_tickangle=-30, hoverlabel=dict(bgcolor="#512879", font_color="white"))
+            st.plotly_chart(fig, use_container_width=True)
 
-with c4:
-    st.subheader("5. Distribución por clínica")
-    d = clinic.groupby("clinica", as_index=False)["pacientes_unicos"].sum().sort_values("pacientes_unicos", ascending=False)
-    if d.empty:
-        st.info("No hay grupos visibles para esta selección.")
-    else:
-        fig = px.bar(d, x="clinica", y="pacientes_unicos",
-                     labels={"pacientes_unicos":"Pacientes únicos en el grupo", "clinica":"Clínica"}, color_discrete_sequence=["#7851A9"])
-        fig.update_layout(template="plotly_white", colorway=PURPLE_SEQUENCE, paper_bgcolor="rgba(0,0,0,0)", plot_bgcolor="rgba(0,0,0,0)", font=dict(color="#443650", family="Arial"), margin=dict(l=10,r=10,t=20,b=10), xaxis_tickangle=-30, hoverlabel=dict(bgcolor="#512879", font_color="white"))
-        st.plotly_chart(fig, use_container_width=True)
+    c3, c4 = st.columns(2)
+    with c3:
+        st.subheader("4. Estados de servicio")
+        d = status.groupby("estatus_servicio", as_index=False)["pacientes_unicos"].sum()
+        if selected_service != "Todos":
+            d2 = ss[ss["servicio"].astype(str) == selected_service]
+            d = d2.groupby("estatus_servicio", as_index=False)["pacientes_unicos"].sum()
+        if d.empty:
+            st.info("No hay grupos visibles para esta selección.")
+        else:
+            fig = px.bar(d.sort_values("pacientes_unicos", ascending=False), x="estatus_servicio", y="pacientes_unicos",
+                         labels={"pacientes_unicos":"Pacientes con al menos un registro", "estatus_servicio":"Estado"}, color_discrete_sequence=["#7851A9"])
+            fig.update_layout(template="plotly_white", colorway=PURPLE_SEQUENCE, paper_bgcolor="rgba(0,0,0,0)", plot_bgcolor="rgba(0,0,0,0)", font=dict(color="#443650", family="Arial"), margin=dict(l=10,r=10,t=20,b=10), hoverlabel=dict(bgcolor="#512879", font_color="white"))
+            st.plotly_chart(fig, use_container_width=True)
 
-with st.expander("Criterios metodológicos y limitaciones"):
-    st.markdown("""
-    - **Unidad de análisis:** el paciente se cuenta como único dentro de cada grupo mediante carnet durante el cálculo local; el carnet no se publica.
-    - **No aditividad:** una persona puede aparecer en varios servicios o estados. No se deben sumar esas distribuciones para inferir pacientes totales.
-    - **Supresión:** los grupos con menos de 5 pacientes no se exportan a los archivos públicos.
-    - **Periodo:** 2026 es parcial según las fechas disponibles y no debe compararse como año completo.
-    - **Interpretación:** la baja administrativa no demuestra por sí sola abandono terapéutico.
-    - **Validación pendiente:** confirmar con la fuente institucional el significado de fecha_baja, fecha_ultima_cita y la granularidad de cada fila.
-    """)
+    with c4:
+        st.subheader("5. Distribución por clínica")
+        d = clinic.groupby("clinica", as_index=False)["pacientes_unicos"].sum().sort_values("pacientes_unicos", ascending=False)
+        if d.empty:
+            st.info("No hay grupos visibles para esta selección.")
+        else:
+            fig = px.bar(d, x="clinica", y="pacientes_unicos",
+                         labels={"pacientes_unicos":"Pacientes únicos en el grupo", "clinica":"Clínica"}, color_discrete_sequence=["#7851A9"])
+            fig.update_layout(template="plotly_white", colorway=PURPLE_SEQUENCE, paper_bgcolor="rgba(0,0,0,0)", plot_bgcolor="rgba(0,0,0,0)", font=dict(color="#443650", family="Arial"), margin=dict(l=10,r=10,t=20,b=10), xaxis_tickangle=-30, hoverlabel=dict(bgcolor="#512879", font_color="white"))
+            st.plotly_chart(fig, use_container_width=True)
+
+if page == "Metodología":
+    with st.expander("Criterios metodológicos y limitaciones"):
+        st.markdown("""
+        - **Unidad de análisis:** el paciente se cuenta como único dentro de cada grupo mediante carnet durante el cálculo local; el carnet no se publica.
+        - **No aditividad:** una persona puede aparecer en varios servicios o estados. No se deben sumar esas distribuciones para inferir pacientes totales.
+        - **Supresión:** los grupos con menos de 5 pacientes no se exportan a los archivos públicos.
+        - **Periodo:** 2026 es parcial según las fechas disponibles y no debe compararse como año completo.
+        - **Interpretación:** la baja administrativa no demuestra por sí sola abandono terapéutico.
+        - **Validación pendiente:** confirmar con la fuente institucional el significado de fecha_baja, fecha_ultima_cita y la granularidad de cada fila.
+        """)
 
 st.caption("Prototipo de apoyo a la toma de decisiones. No sustituye el expediente clínico ni constituye una herramienta diagnóstica.")
