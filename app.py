@@ -6,6 +6,42 @@ import streamlit as st
 
 st.set_page_config(page_title="CRIT BC | Visualización de bajas", page_icon="📊", layout="wide")
 
+st.markdown("""
+<style>
+:root {
+  --crit-purple: #512879;
+  --crit-purple-dark: #382052;
+  --crit-lavender: #EEE5F8;
+  --crit-lavender-soft: #F8F5FC;
+  --crit-mauve: #8E6BB3;
+  --crit-text: #30243D;
+}
+.stApp { background: #FCFAFE; color: var(--crit-text); }
+[data-testid="stHeader"] { background: rgba(252,250,254,.92); }
+.block-container { padding-top: 2rem; padding-bottom: 3rem; max-width: 1450px; }
+[data-testid="stSidebar"] { background: linear-gradient(180deg, #F1E9F8 0%, #F8F5FC 100%); border-right: 1px solid #E4D8F0; }
+[data-testid="stSidebar"] h2, [data-testid="stSidebar"] h3 { color: var(--crit-purple-dark); }
+h1 { color: var(--crit-purple-dark) !important; font-weight: 800 !important; letter-spacing: -0.035em; line-height: 1.15 !important; }
+h2, h3 { color: var(--crit-purple-dark) !important; letter-spacing: -0.02em; }
+[data-testid="stCaptionContainer"] { color: #776984; }
+[data-testid="stMetric"] {
+  background: linear-gradient(145deg, #FFFFFF 0%, #F1E8FA 100%);
+  border: 1px solid #E2D4F0;
+  border-radius: 16px;
+  padding: 17px 18px;
+  box-shadow: 0 4px 14px rgba(70, 38, 101, .06);
+  min-height: 116px;
+}
+[data-testid="stMetricLabel"] p { color: #655174 !important; font-size: .84rem !important; line-height: 1.35 !important; }
+[data-testid="stMetricValue"] { color: var(--crit-purple) !important; font-weight: 800 !important; }
+[data-testid="stAlert"] { border-radius: 12px; border-left-width: 4px; }
+div[data-baseweb="select"] > div, div[data-baseweb="popover"] { border-radius: 10px; }
+.stButton > button { background: var(--crit-purple); color: white; border: 0; border-radius: 10px; }
+hr { border-color: #E8DFF0; }
+[data-testid="stExpander"] { border: 1px solid #E5D9F0; border-radius: 12px; background: #FFFFFF; }
+</style>
+""", unsafe_allow_html=True)
+
 ROOT = Path(__file__).parent
 DATA = ROOT / "data" / "publica"
 
@@ -27,13 +63,14 @@ def load_data():
     return tables, meta
 
 tables, meta = load_data()
+PURPLE_SEQUENCE = ["#512879", "#7851A9", "#A58BC4", "#C8B4DE", "#6F4C8E", "#D9CBE8"]
 years = sorted(tables["anual"]["anio"].dropna().astype(int).unique().tolist())
 if not years:
     st.error("No hay datos agregados disponibles.")
     st.stop()
 
-st.title("Plataforma de visualización de datos para el control del abandono terapéutico")
-st.caption("CRIT Baja California · Prototipo académico · Registros de pacientes con baja administrativa")
+st.markdown('<div style="background:linear-gradient(120deg,#512879 0%,#76519A 100%);padding:26px 30px;border-radius:20px;margin-bottom:18px;color:white;box-shadow:0 8px 24px rgba(81,40,121,.16)"><div style="font-size:.78rem;letter-spacing:.14em;text-transform:uppercase;color:#E9DDF6;font-weight:700;margin-bottom:10px">CRIT Baja California · Prototipo académico</div><div style="font-size:clamp(1.65rem,3vw,2.55rem);line-height:1.13;font-weight:800;letter-spacing:-.035em">Plataforma de visualización de datos</div><div style="font-size:1.08rem;color:#F1E8FA;margin-top:7px">Seguimiento de bajas administrativas</div></div>', unsafe_allow_html=True)
+st.caption("Herramienta de apoyo al análisis y a la toma de decisiones · Registros con estatus administrativo BAJA")
 st.warning(
     "Alcance de interpretación: la base contiene registros con estatus administrativo BAJA. "
     "Esto no confirma por sí solo abandono terapéutico. Las cifras de servicios/estados pueden "
@@ -99,8 +136,8 @@ else:
         monthly["anio"].astype(int).astype(str) + "-" + monthly["mes"].astype(int).astype(str).str.zfill(2) + "-01"
     )
     fig = px.line(monthly.sort_values("periodo"), x="periodo", y="pacientes_unicos", markers=True,
-                  labels={"periodo":"Mes de baja", "pacientes_unicos":"Pacientes únicos"})
-    fig.update_layout(margin=dict(l=10,r=10,t=20,b=10))
+                  labels={"periodo":"Mes de baja", "pacientes_unicos":"Pacientes únicos"}, color_discrete_sequence=PURPLE_SEQUENCE)
+    fig.update_layout(template="plotly_white", colorway=PURPLE_SEQUENCE, paper_bgcolor="rgba(0,0,0,0)", plot_bgcolor="rgba(0,0,0,0)", font=dict(color="#443650", family="Arial"), margin=dict(l=10,r=10,t=20,b=10), hoverlabel=dict(bgcolor="#512879", font_color="white"))
     st.plotly_chart(fig, use_container_width=True)
 
 c1, c2 = st.columns(2)
@@ -120,8 +157,8 @@ with c1:
         st.info("No hay grupos visibles con la combinación seleccionada.")
     else:
         fig = px.bar(d.sort_values("pacientes_unicos"), x="pacientes_unicos", y="servicio", orientation="h",
-                     labels={"pacientes_unicos":"Pacientes únicos en el grupo", "servicio":"Servicio"})
-        fig.update_layout(margin=dict(l=10,r=10,t=20,b=10))
+                     labels={"pacientes_unicos":"Pacientes únicos en el grupo", "servicio":"Servicio"}, color_discrete_sequence=["#7851A9"])
+        fig.update_layout(template="plotly_white", colorway=PURPLE_SEQUENCE, paper_bgcolor="rgba(0,0,0,0)", plot_bgcolor="rgba(0,0,0,0)", font=dict(color="#443650", family="Arial"), margin=dict(l=10,r=10,t=20,b=10), hoverlabel=dict(bgcolor="#512879", font_color="white"))
         st.plotly_chart(fig, use_container_width=True)
 
 with c2:
@@ -140,8 +177,8 @@ with c2:
         st.info("No hay grupos visibles con la combinación seleccionada.")
     else:
         fig = px.bar(d, x="municipio", y="pacientes_unicos",
-                     labels={"pacientes_unicos":"Pacientes únicos en el grupo", "municipio":"Municipio"})
-        fig.update_layout(margin=dict(l=10,r=10,t=20,b=10), xaxis_tickangle=-30)
+                     labels={"pacientes_unicos":"Pacientes únicos en el grupo", "municipio":"Municipio"}, color_discrete_sequence=["#7851A9"])
+        fig.update_layout(template="plotly_white", colorway=PURPLE_SEQUENCE, paper_bgcolor="rgba(0,0,0,0)", plot_bgcolor="rgba(0,0,0,0)", font=dict(color="#443650", family="Arial"), margin=dict(l=10,r=10,t=20,b=10), xaxis_tickangle=-30, hoverlabel=dict(bgcolor="#512879", font_color="white"))
         st.plotly_chart(fig, use_container_width=True)
 
 c3, c4 = st.columns(2)
@@ -155,8 +192,8 @@ with c3:
         st.info("No hay grupos visibles para esta selección.")
     else:
         fig = px.bar(d.sort_values("pacientes_unicos", ascending=False), x="estatus_servicio", y="pacientes_unicos",
-                     labels={"pacientes_unicos":"Pacientes con al menos un registro", "estatus_servicio":"Estado"})
-        fig.update_layout(margin=dict(l=10,r=10,t=20,b=10))
+                     labels={"pacientes_unicos":"Pacientes con al menos un registro", "estatus_servicio":"Estado"}, color_discrete_sequence=["#7851A9"])
+        fig.update_layout(template="plotly_white", colorway=PURPLE_SEQUENCE, paper_bgcolor="rgba(0,0,0,0)", plot_bgcolor="rgba(0,0,0,0)", font=dict(color="#443650", family="Arial"), margin=dict(l=10,r=10,t=20,b=10), hoverlabel=dict(bgcolor="#512879", font_color="white"))
         st.plotly_chart(fig, use_container_width=True)
 
 with c4:
@@ -166,8 +203,8 @@ with c4:
         st.info("No hay grupos visibles para esta selección.")
     else:
         fig = px.bar(d, x="clinica", y="pacientes_unicos",
-                     labels={"pacientes_unicos":"Pacientes únicos en el grupo", "clinica":"Clínica"})
-        fig.update_layout(margin=dict(l=10,r=10,t=20,b=10), xaxis_tickangle=-30)
+                     labels={"pacientes_unicos":"Pacientes únicos en el grupo", "clinica":"Clínica"}, color_discrete_sequence=["#7851A9"])
+        fig.update_layout(template="plotly_white", colorway=PURPLE_SEQUENCE, paper_bgcolor="rgba(0,0,0,0)", plot_bgcolor="rgba(0,0,0,0)", font=dict(color="#443650", family="Arial"), margin=dict(l=10,r=10,t=20,b=10), xaxis_tickangle=-30, hoverlabel=dict(bgcolor="#512879", font_color="white"))
         st.plotly_chart(fig, use_container_width=True)
 
 with st.expander("Criterios metodológicos y limitaciones"):
