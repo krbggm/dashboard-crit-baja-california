@@ -1,0 +1,11 @@
+{
+  "filas_fuente": 61709,
+  "pacientes_unicos": 743,
+  "servicios_distintos": 133,
+  "municipios_distintos": 9,
+  "clinicas_distintas": 22,
+  "fecha_baja_min": "2022-01-31",
+  "fecha_baja_max": "2026-07-01",
+  "umbral_suppression": 5,
+  "nota": "Agregados sin identificadores directos. Las celdas con menos de 5 pacientes se omiten."
+}

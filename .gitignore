@@ -1,0 +1,10 @@
+# Datos identificables: NUNCA subir a un repositorio público
+data/privada_local/*
+*.xlsx
+*.xls
+*.xlsm
+.env
+.streamlit/secrets.toml
+__pycache__/
+.venv/
+venv/
